@@ -1,0 +1,72 @@
+{% load staticfiles %}
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>Thrillee File share</title>
+  </head>
+  <body>
+    <script src="{% static "js/jquery.js" %}"></script>
+    <script src="{% static "js/reconnect.js" %}"></script>
+    Thrillee File Share App lol
+    <ul id="files">
+
+    </ul>
+    <form id='form' class="form-group" method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+          {{form.as_p}}
+        <button type="submit" name="button">Send file</button>
+      </form>
+
+      <script>
+      // websocket scripts
+      var loc = window.location
+      var formData = $('#form')
+      var msgInput = $('#id_file')
+      var fileHolder = $('#files')
+
+      var wsStart = 'ws://'
+      if (loc.protocol == 'https:'){
+        wsStart = 'wss://'
+      }
+      var data
+      var endpoint = wsStart + loc.host + loc.pathname
+      var socket = new ReconnectingWebSocket(endpoint)
+
+      socket.onmessage = function(e){
+        console.log("message", e.target)
+        console.log(data)
+        var DataMsg = JSON.parse(e.data)
+        fileHolder.append("<li><a href=" + DataMsg.message + " download>"+ DataMsg.message +"</a></li>")
+      }
+      socket.onopen = function(e){
+        console.log("open", e)
+        msgInput.on('change', handleFile)
+        function handleFile(e){
+          data = e.target.files
+
+          return data
+        }
+
+        formData.submit(function(event){
+          event.preventDefault()
+          var msgText = msgInput.val()
+        
+          var finalData = {
+            'message': data
+          }
+
+          socket.send(JSON.stringify(finalData))
+          formData[0].reset()
+        })
+      }
+      socket.onerror = function(e){
+        console.log("error", e)
+      }
+      socket.onclose = function(e){
+        console.log("close", e)
+      }
+
+      </script>
+  </body>
+</html>
